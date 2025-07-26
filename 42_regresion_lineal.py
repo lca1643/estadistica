@@ -35,7 +35,6 @@ with st.sidebar:
         df = pd.read_csv(uploaded_file)
         st.header("2. Seleccionar Variables")
         
-        # Filtrar por columnas numéricas, que son las necesarias para la regresión
         numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
         
         if len(numeric_cols) < 2:
@@ -43,12 +42,11 @@ with st.sidebar:
         
         columna_x = st.selectbox("Elige la Variable Independiente (Eje X):", options=numeric_cols, index=0)
         
-        # Opciones para Y no deben incluir la X ya seleccionada
         opciones_y = [col for col in numeric_cols if col != columna_x]
         columna_y = st.selectbox("Elige la Variable Dependiente (Eje Y):", options=opciones_y, index=0)
 
 # --- 3. Panel Principal ---
-st.title("📈 Herramienta para Regresión Lineal Simple")
+st.title("📈 Regresión Lineal Simple")
 st.write(
     "Esta aplicación realiza un análisis de regresión lineal simple entre dos variables numéricas. "
     "Calcula la línea que mejor se ajusta a los datos, evalúa la calidad del ajuste con R² y permite hacer predicciones."
@@ -65,7 +63,6 @@ st.markdown("---")
 st.header(f"Análisis de Regresión: '{columna_y}' (Y) vs. '{columna_x}' (X)")
 
 try:
-    # Preparar datos (eliminando filas donde falte algún valor)
     datos_limpios = df[[columna_x, columna_y]].dropna()
     x_data = datos_limpios[columna_x]
     y_data = datos_limpios[columna_y]
@@ -73,11 +70,9 @@ try:
     if x_data.empty or y_data.empty:
         st.error("No hay suficientes datos válidos en las columnas seleccionadas después de eliminar valores faltantes."); st.stop()
 
-    # --- Realizar la regresión lineal ---
     slope, intercept, r_value, p_value, std_err = linregress(x_data, y_data)
     r_squared = r_value**2
 
-    # --- Mostrar Resultados Estadísticos ---
     st.subheader("Resultados del Modelo de Regresión")
     col1, col2, col3 = st.columns(3)
     col1.metric("Pendiente (b₁)", f"{slope:.4f}")
@@ -87,30 +82,20 @@ try:
     st.markdown("##### Ecuación de la Recta de Regresión:")
     st.latex(f"Y = {intercept:.4f} + ({slope:.4f}) \\times X")
     
-    # --- Sección de Predicción Interactiva ---
     st.subheader("Realizar una Predicción")
     min_val, max_val = float(x_data.min()), float(x_data.max())
     
-    # Usar un control deslizante para la predicción
     valor_prediccion_x = st.slider(f"Selecciona un valor para '{columna_x}' para predecir '{columna_y}':", 
                                    min_value=min_val, max_value=max_val, value=(min_val + max_val) / 2)
     
     prediccion_y = intercept + slope * valor_prediccion_x
     st.success(f"Para un valor de **{columna_x} = {valor_prediccion_x:.2f}**, el valor predicho de **{columna_y}** es **{prediccion_y:.2f}**")
 
-
-    # --- Visualización ---
     st.subheader("Gráfico de Dispersión y Línea de Regresión")
     
     fig, ax = plt.subplots(figsize=(10, 6))
-    
-    # Gráfico de dispersión
     sns.scatterplot(x=x_data, y=y_data, s=80, label='Datos Observados', ax=ax)
-    
-    # Línea de regresión
     ax.plot(x_data, intercept + slope * x_data, color='red', linewidth=2, label=f'Línea de Regresión (R² = {r_squared:.3f})')
-    
-    # Punto de predicción
     ax.scatter(valor_prediccion_x, prediccion_y, color='green', marker='o', s=150, zorder=5, 
                label=f'Predicción para X={valor_prediccion_x:.2f}')
     
@@ -122,13 +107,21 @@ try:
     
     st.pyplot(fig)
 
-    # --- Interpretación ---
+    # --- NUEVA SECCIÓN: Botón de descarga ---
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches='tight')
+    st.download_button(
+        label="📥 Descargar Gráfico",
+        data=buf,
+        file_name=f"regresion_{columna_y}_vs_{columna_x}.png",
+        mime="image/png"
+    )
+    
     with st.expander("Ver Interpretación Detallada de los Resultados"):
         st.markdown(f"**Pendiente ({slope:.4f}):** Por cada unidad que aumenta **{columna_x}**, se estima que **{columna_y}** {'aumenta' if slope > 0 else 'disminuye'} en un promedio de **{abs(slope):.4f}** unidades.")
         st.markdown(f"**Intercepto ({intercept:.4f}):** Cuando **{columna_x}** es igual a 0, el valor estimado de **{columna_y}** es **{intercept:.4f}**. (Esta interpretación es útil solo si X=0 tiene sentido en el contexto de tus datos).")
         st.markdown(f"**Coeficiente de Determinación R² ({r_squared:.4f}):** El **{r_squared*100:.2f}%** de la variabilidad en **{columna_y}** puede ser explicada por la variación en **{columna_x}** a través de este modelo lineal. Un valor más cercano a 1 indica un mejor ajuste del modelo a los datos.")
         st.markdown(f"**Valor p ({p_value:.4f}):** Este valor indica la significancia estadística de la relación. Un p-valor bajo (típicamente < 0.05) sugiere que la relación observada no se debe al azar.")
-
 
 except Exception as e:
     st.error(f"Ocurrió un error al procesar los datos: {e}")
