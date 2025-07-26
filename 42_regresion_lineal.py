@@ -17,9 +17,9 @@ st.set_page_config(
 # --- 2. Barra Lateral con Controles ---
 with st.sidebar:
     st.title("Fundamentos de Estadística")
-    st.header("CAPÍTULO 5:")
+    st.header("CAPÍTULO 4:")
     st.header("Regresión y Correlación")
-    st.subheader("5.1 Regresión Lineal Simple")
+    st.subheader("4.2 Regresión Lineal Simple")
     st.markdown("*Autor: Luis Corona Alcantar*")
     st.markdown("_Correo: lca1643@gmail.com_")
     st.markdown("---")
